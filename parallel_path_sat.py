@@ -25,7 +25,7 @@ Usage:
         print("UNSAT")
 
 Author: Tomio Kobayashi
-Version: 1.0.1
+Version: 1.0.2
 Last Updated: 2/28/2025
 
 """
@@ -73,7 +73,7 @@ class ParallelPathSAT:
     
         return clauses
 
-    def solve(self, clauses, generate_dnf=False):
+    def solve(self, clauses, max_dnf=1_000_000, generate_dnf=False):
         """
         Uses tuples for path tracking, ensuring immutability and fast deduplication.
         """
@@ -107,13 +107,17 @@ class ParallelPathSAT:
     
             # **Drop Old Paths Explicitly**  
             paths = new_paths  # Only retain the new unique paths
-            # print("len(paths)", len(paths))
+            print("len(paths)", len(paths))
             if not paths:  # If all paths are invalidated, return UNSAT
+                return False  
+
+            if max_dnf < len(paths):
+                print("ERROR: max_dnf", max_dnf, "exeeded", len(paths))
                 return False  
         if generate_dnf:
             self.dnf = []
             index_var = {v: k for k, v in var_index.items()}
-            for p in new_paths:
+            for p in paths:
                 dnf_clause = []
                 for i, pp in enumerate(p):
                     # print(pp)
@@ -140,23 +144,71 @@ cnf_formula = [
 # cnf_formula = generate_cnf(5, 10)   # 10 clauses, 5 variables
 # cnf_formula = generate_cnf(10, 20) # 20 clauses, 10 variables
 # cnf_formula = generate_cnf(15, 30) # 30 clauses, 15 variables
-cnf_formula = generate_cnf(20, 60) # 20 clauses, 60 variables
+# cnf_formula = generate_cnf(20, 60) # 20 clauses, 60 variables
 # cnf_formula = generate_cnf(30, 100) # 30 clauses, 15 variables
 # cnf_formula = generate_cnf(40, 100) # 30 clauses, 15 variables
 
 cnf_formula = [[4, -18, 19], [3, 18, -5], [-5, -8, -15], [-20, 7, -16], [10, -13, -7], [-12, -9, 17], [17, 19, 5], [-16, 9, 15], [11, -5, -14], 
        [18, -10, 13], [-3, 11, 12], [-6, -17, -8], [-18, 14, 1], [-19, -15, 10], [12, 18, -19], [-8, 4, 7], [-8, -9, 4], [7, 17, -15], 
        [12, -7, -14], [-10, -11, 8], [2, -15, -11], [9, 6, 1], [-11, 20, -17], [9, -15, 13], [12, -7, -17], [-18, -2, 20], [20, 12, 4], 
-       [19, 11, 14], [-16, 18, -4], [-1, -17, -19], [-13, 15, 10], [-12, -14, -13], [12, -14, -7], [-7, 16, 10], [6, 10, 7], [20, 14, -16], 
-       [-19, 17, 11], [-7, 1, -20], [-5, 12, 15], [-4, -9, -13], [12, -11, -7], [-5, 19, -8], [1, 16, 17], [20, -14, -15], [13, -4, 10], 
-       [14, 7, 10], [-5, 9, 20], [10, 1, -19], [-16, -15, -1], [16, 3, -11], [-15, -10, 4], [4, -15, -3], [-10, -16, 11], [-8, 12, -5], 
-       [14, -6, 12], [1, 6, 11], [-13, -5, -1], [-7, -2, 12], [1, -20, 19], [-2, -13, -8], [15, 18, 4], [-11, 14, 9], [-6, -15, -2], 
-       [5, -12, -15], [-6, 17, 5], [-13, 5, -19], [20, -1, 14], [9, -17, 15], [-5, 19, -18], [-12, 8, -10], [-18, 14, -4], [15, -9, 13], 
-       [9, -5, -1], [10, -19, -14], [20, 9, 4], [-9, -2, 19], [-5, 13, -17],[2, -10, -18], [-18, 3, 11], [7, -9, 17],[-15, -6, -3],
-       [-2, 3, -13], [12, 3, -2], [-2, -3, 17], [20, -15, -16], [-5, -17, -19], [-20, -18, 11], [-9, 1, -5], [-19, 9, 17], [12, -2, 17]
+       # [19, 11, 14], [-16, 18, -4], [-1, -17, -19], [-13, 15, 10], [-12, -14, -13], [12, -14, -7], [-7, 16, 10], [6, 10, 7], [20, 14, -16], 
+       # [-19, 17, 11], [-7, 1, -20], [-5, 12, 15], [-4, -9, -13], [12, -11, -7], [-5, 19, -8], [1, 16, 17], [20, -14, -15], [13, -4, 10], 
+       # [14, 7, 10], [-5, 9, 20], [10, 1, -19], [-16, -15, -1], [16, 3, -11], [-15, -10, 4], [4, -15, -3], [-10, -16, 11], [-8, 12, -5], 
+       # [14, -6, 12], [1, 6, 11], [-13, -5, -1], [-7, -2, 12], [1, -20, 19], [-2, -13, -8], [15, 18, 4], [-11, 14, 9], [-6, -15, -2], 
+       # [5, -12, -15], [-6, 17, 5], [-13, 5, -19], [20, -1, 14], [9, -17, 15], [-5, 19, -18], [-12, 8, -10], [-18, 14, -4], [15, -9, 13], 
+       # [9, -5, -1], [10, -19, -14], [20, 9, 4], [-9, -2, 19], [-5, 13, -17],[2, -10, -18], [-18, 3, 11], [7, -9, 17],[-15, -6, -3],
+       # [-2, 3, -13], [12, 3, -2], [-2, -3, 17], [20, -15, -16], [-5, -17, -19], [-20, -18, 11], [-9, 1, -5], [-19, 9, 17], [12, -2, 17]
       ]
          
 sat_solver = ParallelPathSAT()
-print("SAT Result:", "SAT" if sat_solver.solve(cnf_formula, generate_dnf=False) else "UNSAT")
+print("SAT Result:", "SAT" if sat_solver.solve(cnf_formula, generate_dnf=True) else "UNSAT")
 
-# sat_solver.dnf
+# print(sat_solver.dnf[:3])
+# print(sat_solver.dnf[-3:])
+
+
+
+
+
+
+import random
+
+def generate_cnf(num_vars, num_clauses):
+    """
+    Generates a random 3-SAT CNF formula with given number of variables and clauses.
+    Each clause consists of 3 literals.
+    """
+    cnf = []
+    for _ in range(num_clauses):
+        clause = set()
+        while len(clause) < 3:  # Ensure exactly 3 literals per clause
+            var = random.randint(1, num_vars)  # Choose a variable
+            sign = random.choice([-1, 1])  # Randomly negate
+            clause.add(var * sign)  # Add signed variable
+        cnf.append(list(clause))
+    return cnf
+
+# Generate CNFs with different sizes
+cnf_10_5 = generate_cnf(5, 10)   # 10 clauses, 5 variables
+cnf_20_10 = generate_cnf(10, 20) # 20 clauses, 10 variables
+cnf_30_15 = generate_cnf(15, 30) # 30 clauses, 15 variables
+
+# Display the CNFs
+cnfs = {
+    "CNF (10 clauses, 5 variables)": cnf_10_5,
+    "CNF (20 clauses, 10 variables)": cnf_20_10,
+    "CNF (30 clauses, 15 variables)": cnf_30_15
+}
+
+# import ace_tools as tools
+import pandas as pd
+
+# Convert CNFs to a display-friendly format
+df_list = []
+for name, cnf in cnfs.items():
+    df_list.append(pd.DataFrame({name: [str(clause) for clause in cnf]}))
+
+# # Display the CNFs
+# for df in df_list:
+#     # tools.display_dataframe_to_user(name="Generated CNF Formulas", dataframe=df)
+#     print(df)
