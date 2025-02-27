@@ -25,10 +25,11 @@ Usage:
         print("UNSAT")
 
 Author: Tomio Kobayashi
-Version: 1.0.0
-Last Updated: 2/27/2025
+Version: 1.0.1
+Last Updated: 2/28/2025
 
 """
+
 
 import random
 
@@ -96,10 +97,10 @@ class ParallelPathSAT:
                     if path[var_idx] == -sign:  # Conflict: discard this path
                         continue
                     
-                    if path[var_idx] == 0:  # Unassigned variable, create a new path
-                        new_path = list(path)  # Convert tuple to list for modification
-                        new_path[var_idx] = sign
-                        local_new_paths.add(tuple(new_path))  # Convert back to tuple for O(1) lookup
+                    # if path[var_idx] == 0:  # Unassigned variable, create a new path
+                    new_path = list(path)  # Convert tuple to list for modification
+                    new_path[var_idx] = sign
+                    local_new_paths.add(tuple(new_path))  # Convert back to tuple for O(1) lookup
     
                 if local_new_paths:
                     new_paths.update(local_new_paths)
@@ -139,7 +140,7 @@ cnf_formula = [
 # cnf_formula = generate_cnf(5, 10)   # 10 clauses, 5 variables
 # cnf_formula = generate_cnf(10, 20) # 20 clauses, 10 variables
 # cnf_formula = generate_cnf(15, 30) # 30 clauses, 15 variables
-# cnf_formula = generate_cnf(20, 60) # 30 clauses, 15 variables
+cnf_formula = generate_cnf(20, 60) # 20 clauses, 60 variables
 # cnf_formula = generate_cnf(30, 100) # 30 clauses, 15 variables
 # cnf_formula = generate_cnf(40, 100) # 30 clauses, 15 variables
 
